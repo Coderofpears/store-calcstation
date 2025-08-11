@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GameCard from "@/components/GameCard";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { loadGames } from "@/data/store";
@@ -11,20 +12,26 @@ import { loadAnnouncements } from "@/data/store";
 
 const Index = () => {
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<"all" | "bestsellers" | "new">("all");
   const games = loadGames();
   const announcements = loadAnnouncements();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return games;
-    return games.filter(
+    let base = games;
+    if (category === "bestsellers") {
+      base = games.filter((g) => g.tags.some((t) => /bestseller(s)?/i.test(t)));
+    } else if (category === "new") {
+      base = games.filter((g) => g.tags.some((t) => /\bnew\b|new release(s)?/i.test(t)));
+    }
+    if (!q) return base;
+    return base.filter(
       (g) =>
         g.title.toLowerCase().includes(q) ||
         g.tags.some((t) => t.toLowerCase().includes(q))
     );
-  }, [games, query]);
+  }, [games, query, category]);
 
-  // Inject an announcement after first row if available
   const firstRow = filtered.slice(0, 3);
   const rest = filtered.slice(3);
   const banner = announcements[0];
@@ -49,6 +56,11 @@ const Index = () => {
       </header>
 
       <main className="container pb-16">
+        {banner && (
+          <section className="mb-6" aria-label="Top announcement banner">
+            <AnnouncementBanner image={banner.image} alt={banner.alt} href={banner.href} />
+          </section>
+        )}
         <section className="mb-6">
           <h1 className="sr-only">Browse Games</h1>
           <div className="flex items-center gap-3">
@@ -58,6 +70,15 @@ const Index = () => {
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search games"
             />
+          </div>
+          <div className="mt-4">
+            <Tabs value={category} onValueChange={(v) => setCategory(v as any)}>
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="bestsellers">Bestsellers</TabsTrigger>
+                <TabsTrigger value="new">New Releases</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </section>
 
@@ -69,11 +90,7 @@ const Index = () => {
               <GameCard key={g.id} game={g} />
             ))}
           </div>
-
-          {banner && (
-            <AnnouncementBanner image={banner.image} alt={banner.alt} href={banner.href} />
-          )}
-
+          {/* Top banner already shown above if present */}
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {rest.map((g) => (
               <GameCard key={g.id} game={g} />

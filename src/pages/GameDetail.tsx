@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,7 @@ const GameDetail = () => {
   const owned = new Set(loadOwned());
   const [open, setOpen] = useState(false);
   const [edition, setEdition] = useState(game?.editions?.[0]?.id || "standard");
+  const navigate = useNavigate();
 
   if (!game) {
     return (
@@ -39,6 +40,7 @@ const GameDetail = () => {
     addOwned(game.id);
     toast.success("Purchase completed (simulated)");
     setOpen(false);
+    navigate(`/thank-you?game=${game.id}`);
   };
 
   const jsonLd = {
