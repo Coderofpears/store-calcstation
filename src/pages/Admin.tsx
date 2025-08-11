@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { defaultGames, type Game, type Platform } from "@/data/games";
+import { defaultGames, type Game } from "@/data/games";
 import {
   loadGames,
   saveGames,
@@ -71,34 +71,6 @@ const Admin = () => {
     toast.success("DLC added");
   };
 
-  // Device-specific download links management
-  const [platformLinks, setPlatformLinks] = useState<Partial<Record<Platform, string>>>({});
-
-  useEffect(() => {
-    if (selectedGame) {
-      setPlatformLinks(selectedGame.platformLinks || {});
-    } else {
-      setPlatformLinks({});
-    }
-  }, [selectedGame]);
-
-  const updatePlatformField = (key: Platform, value: string) => {
-    setPlatformLinks((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const savePlatformLinks = () => {
-    if (!selectedGame) return;
-    const trimmed = Object.fromEntries(
-      Object.entries(platformLinks || {}).map(([k, v]) => [k, (v || "").trim()])
-    ) as Partial<Record<Platform, string>>;
-    const next = games.map((g) =>
-      g.id === selectedGame.id ? { ...g, platformLinks: trimmed } : g
-    );
-    setGames(next);
-    saveGames(next);
-    toast.success("Device download links saved");
-  };
-
   const onUploadAnnouncement = (file: File) => {
     const url = URL.createObjectURL(file);
     const item: Announcement = { id: `${Date.now()}`, image: url, alt: file.name };
@@ -140,7 +112,6 @@ const Admin = () => {
             <TabsTrigger value="games">Games</TabsTrigger>
             <TabsTrigger value="dlc">DLC</TabsTrigger>
             <TabsTrigger value="ann">Announcements</TabsTrigger>
-            <TabsTrigger value="downloads">Device Downloads</TabsTrigger>
             <TabsTrigger value="ai">AI Description</TabsTrigger>
           </TabsList>
 
@@ -239,60 +210,6 @@ const Admin = () => {
                     <img key={a.id} src={a.image} alt={a.alt} className="rounded-md shadow-glow" />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="downloads" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Downloads</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                <div className="md:col-span-3">
-                  <Label>Game</Label>
-                  <select
-                    className="mt-1 w-full rounded-md border bg-background p-2"
-                    value={selectedGameId}
-                    onChange={(e) => setSelectedGameId(e.target.value)}
-                  >
-                    <option value="">Select a game</option>
-                    {games.map((g) => (
-                      <option key={g.id} value={g.id}>{g.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="dl-windows">Windows URL</Label>
-                  <Input id="dl-windows" placeholder="https://..." value={platformLinks.windows || ""} onChange={(e) => updatePlatformField("windows", e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="dl-mac">macOS URL</Label>
-                  <Input id="dl-mac" placeholder="https://..." value={platformLinks.mac || ""} onChange={(e) => updatePlatformField("mac", e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="dl-linux">Linux URL</Label>
-                  <Input id="dl-linux" placeholder="https://..." value={platformLinks.linux || ""} onChange={(e) => updatePlatformField("linux", e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="dl-android">Android URL</Label>
-                  <Input id="dl-android" placeholder="https://..." value={platformLinks.android || ""} onChange={(e) => updatePlatformField("android", e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="dl-ios">iOS URL</Label>
-                  <Input id="dl-ios" placeholder="https://..." value={platformLinks.ios || ""} onChange={(e) => updatePlatformField("ios", e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="dl-web">Web URL</Label>
-                  <Input id="dl-web" placeholder="https://..." value={platformLinks.web || ""} onChange={(e) => updatePlatformField("web", e.target.value)} />
-                </div>
-
-                <div className="md:col-span-3 flex gap-3">
-                  <Button variant="hero" onClick={savePlatformLinks} disabled={!selectedGameId}>Save</Button>
-                  <Button variant="secondary" onClick={() => setPlatformLinks({})}>Clear</Button>
-                </div>
-                <p className="md:col-span-3 text-sm text-muted-foreground">Saved device links appear on the Thank You page after purchase.</p>
               </CardContent>
             </Card>
           </TabsContent>
