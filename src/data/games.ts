@@ -15,6 +15,9 @@ export interface DLC {
   price: number;
 }
 
+export type Platform = "windows" | "mac" | "linux" | "android" | "ios" | "web";
+export type PlatformLinks = Partial<Record<Platform, string>>;
+
 export interface Game {
   id: string;
   title: string;
@@ -26,7 +29,9 @@ export interface Game {
   dlcs: DLC[];
   screenshots?: string[];
   trailerUrl?: string;
+  platformLinks?: PlatformLinks;
 }
+
 
 export const defaultGames: Game[] = [
   {

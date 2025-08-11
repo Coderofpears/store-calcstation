@@ -35,14 +35,37 @@ const ThankYou = () => {
         <section aria-label="Download options" className="space-y-4">
           <h2 className="font-display text-xl">Download for your device</h2>
           <p className="text-sm text-muted-foreground">Select your platform to get the installer. Device-specific links will be configured by the admin.</p>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            <Button variant="glow" asChild><a href="#" aria-disabled>Windows</a></Button>
-            <Button variant="glow" asChild><a href="#" aria-disabled>macOS</a></Button>
-            <Button variant="glow" asChild><a href="#" aria-disabled>Linux</a></Button>
-            <Button variant="secondary" asChild><a href="#" aria-disabled>Android</a></Button>
-            <Button variant="secondary" asChild><a href="#" aria-disabled>iOS</a></Button>
-            <Button variant="secondary" asChild><a href="#" aria-disabled>Web</a></Button>
-          </div>
+          {game && game.platformLinks && Object.values(game.platformLinks).some(Boolean) ? (
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {([
+                { key: "windows", label: "Windows" },
+                { key: "mac", label: "macOS" },
+                { key: "linux", label: "Linux" },
+                { key: "android", label: "Android" },
+                { key: "ios", label: "iOS" },
+                { key: "web", label: "Web" },
+              ] as const).map(({ key, label }) => {
+                const href = (game.platformLinks as any)?.[key] as string | undefined;
+                if (!href) return null;
+                return (
+                  <Button key={key} variant={key === "windows" || key === "mac" || key === "linux" ? "glow" : "secondary"} asChild>
+                    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Download ${game.title} for ${label}`}>
+                      {label}
+                    </a>
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              <Button variant="glow" asChild><a href="#" aria-disabled>Windows</a></Button>
+              <Button variant="glow" asChild><a href="#" aria-disabled>macOS</a></Button>
+              <Button variant="glow" asChild><a href="#" aria-disabled>Linux</a></Button>
+              <Button variant="secondary" asChild><a href="#" aria-disabled>Android</a></Button>
+              <Button variant="secondary" asChild><a href="#" aria-disabled>iOS</a></Button>
+              <Button variant="secondary" asChild><a href="#" aria-disabled>Web</a></Button>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">Note: Downloads per device and site-specific links will be enabled after admin configuration.</p>
         </section>
 
