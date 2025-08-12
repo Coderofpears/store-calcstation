@@ -15,8 +15,6 @@ import {
   saveAnnouncements,
   type Announcement,
 } from "@/data/store";
-import { fileToDataUrl } from "@/utils/base64";
-import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const [games, setGames] = useState<Game[]>([]);
@@ -73,31 +71,13 @@ const Admin = () => {
     toast.success("DLC added");
   };
 
-  const onUploadAnnouncement = async (file: File) => {
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      const item: Announcement = { id: `${Date.now()}`, image: dataUrl, alt: file.name };
-      const next = [item, ...ann].slice(0, 5);
-      setAnn(next);
-      saveAnnouncements(next);
-
-      // Try to persist in Supabase (optional, requires sign-in)
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-      if (user) {
-        await supabase.from("uploads").insert({
-          user_id: user.id,
-          kind: "image",
-          file_name: file.name,
-          mime_type: file.type,
-          data_base64: dataUrl,
-        });
-      }
-      toast.success("Announcement uploaded");
-    } catch (e) {
-      console.error(e);
-      toast.error("Upload failed");
-    }
+  const onUploadAnnouncement = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const item: Announcement = { id: `${Date.now()}`, image: url, alt: file.name };
+    const next = [item, ...ann].slice(0, 5);
+    setAnn(next);
+    saveAnnouncements(next);
+    toast.success("Announcement uploaded");
   };
 
   const [aiPrompt, setAiPrompt] = useState("");

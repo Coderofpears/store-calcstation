@@ -35,39 +35,12 @@ const GameDetail = () => {
   const selectedEdition = game.editions.find((e) => e.id === edition) || game.editions[0];
 
   const price = selectedEdition?.price ?? game.price;
-  const isFree = (price ?? 0) === 0;
 
   const handlePurchase = () => {
     addOwned(game.id);
-    toast.success(isFree ? "Added to your library" : "Purchase completed (simulated)");
+    toast.success("Purchase completed (simulated)");
     setOpen(false);
     navigate(`/thank-you?game=${game.id}`);
-  };
-
-  const handleGetDemo = async () => {
-    const key = "neon_store_demo_claims_v1";
-    const raw = localStorage.getItem(key);
-    const claims = new Set<string>(raw ? JSON.parse(raw) : []);
-    if (claims.has(game.id)) {
-      toast.info("You already claimed this demo.");
-      return;
-    }
-    // Try to claim via backend if logged in; fallback to localStorage
-    try {
-      const mod = await import("@/integrations/supabase/api");
-      const res = await mod.claimDemo(game.id);
-      if (!res.ok) {
-        if (res.message) toast.info(res.message);
-        if ((res.message || "").toLowerCase().includes("already")) {
-          claims.add(game.id);
-          localStorage.setItem(key, JSON.stringify([...claims]));
-        }
-        // If not ok but not already, still allow local claim
-      }
-    } catch {}
-    claims.add(game.id);
-    localStorage.setItem(key, JSON.stringify([...claims]));
-    navigate(`/thank-you?game=${game.id}&kind=demo`);
   };
 
   const jsonLd = {
@@ -135,13 +108,10 @@ const GameDetail = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="hero" onClick={() => (isFree ? handlePurchase() : setOpen(true))}>
-                {isFree ? "Get Free" : `Buy Now — $${price.toFixed(2)}`}
+              <Button variant="hero" onClick={() => setOpen(true)}>
+                Buy Now — ${price.toFixed(2)}
               </Button>
-              <Button variant="secondary" onClick={handleGetDemo}>Get Demo</Button>
-              {!isFree && (
-                <span className="text-sm text-muted-foreground">Secure checkout (simulated)</span>
-              )}
+              <span className="text-sm text-muted-foreground">Secure checkout (simulated)</span>
             </div>
 
             <Separator className="my-6" />

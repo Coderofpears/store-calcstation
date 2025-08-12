@@ -4,36 +4,11 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { loadGames } from "@/data/store";
-import { useQuery } from "@tanstack/react-query";
-import { getDownloads, type DownloadKind } from "@/integrations/supabase/api";
-
-// Device-specific downloads grid
-const DownloadsGrid = ({ slug, kind }: { slug: string; kind: DownloadKind }) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["downloads", slug, kind],
-    queryFn: () => getDownloads(slug, kind),
-  });
-
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading downloads...</p>;
-  const downloads = data ?? [];
-  if (!downloads.length) return <p className="text-sm text-muted-foreground">No downloads configured yet.</p>;
-
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-      {downloads.map((d) => (
-        <Button key={d.id} variant="glow" asChild>
-          <a href={d.data_base64} download={d.file_name ?? `${slug}-${d.device}-${kind}`}>{d.device}</a>
-        </Button>
-      ))}
-    </div>
-  );
-};
 
 const ThankYou = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const gameId = params.get("game") || "";
-  const kindParam: DownloadKind = params.get("kind") === "demo" ? "demo" : "full";
   const games = loadGames();
   const game = useMemo(() => games.find((g) => g.id === gameId), [games, gameId]);
   const orderId = useMemo(() => Math.random().toString(36).slice(2, 10).toUpperCase(), []);
@@ -59,9 +34,16 @@ const ThankYou = () => {
 
         <section aria-label="Download options" className="space-y-4">
           <h2 className="font-display text-xl">Download for your device</h2>
-          <p className="text-sm text-muted-foreground">Select your platform to get the installer.</p>
-          {/* Fetch device-specific downloads from Supabase */}
-          <DownloadsGrid slug={gameId} kind={kindParam} />
+          <p className="text-sm text-muted-foreground">Select your platform to get the installer. Device-specific links will be configured by the admin.</p>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            <Button variant="glow" asChild><a href="#" aria-disabled>Windows</a></Button>
+            <Button variant="glow" asChild><a href="#" aria-disabled>macOS</a></Button>
+            <Button variant="glow" asChild><a href="#" aria-disabled>Linux</a></Button>
+            <Button variant="secondary" asChild><a href="#" aria-disabled>Android</a></Button>
+            <Button variant="secondary" asChild><a href="#" aria-disabled>iOS</a></Button>
+            <Button variant="secondary" asChild><a href="#" aria-disabled>Web</a></Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Note: Downloads per device and site-specific links will be enabled after admin configuration.</p>
         </section>
 
         <div className="mt-10 flex gap-3">

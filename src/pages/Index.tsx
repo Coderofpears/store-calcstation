@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -9,21 +9,12 @@ import GameCard from "@/components/GameCard";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { loadGames } from "@/data/store";
 import { loadAnnouncements } from "@/data/store";
-import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | "bestsellers" | "new">("all");
   const games = loadGames();
   const announcements = loadAnnouncements();
-  const [loggedIn, setLoggedIn] = useState(false);
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setLoggedIn(!!session?.user);
-    });
-    supabase.auth.getSession().then(({ data }) => setLoggedIn(!!data.session?.user));
-    return () => subscription.unsubscribe();
-  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,19 +48,9 @@ const Index = () => {
         <div className="container">
           <div className="flex items-center justify-between">
             <Link to="/" className="story-link text-xl font-display">Neon Game Store</Link>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/auth">{loggedIn ? "Account" : "Sign In"}</Link>
-              </Button>
-              {loggedIn && (
-                <Button variant="destructive" size="sm" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); }}>
-                  Log out
-                </Button>
-              )}
-              <Button asChild variant="hero" size="sm">
-                <Link to="/admin">Admin Portal</Link>
-              </Button>
-            </div>
+            <Button asChild variant="hero" size="sm">
+              <Link to="/admin">Admin Portal</Link>
+            </Button>
           </div>
         </div>
       </header>
