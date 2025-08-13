@@ -58,6 +58,7 @@ const Auth = () => {
       </Helmet>
 
       <main className="container py-12 max-w-lg">
+        <h1 className="sr-only">{mode === "signin" ? "Sign In" : "Create Account"}</h1>
         <Card>
           <CardHeader>
             <CardTitle>{mode === "signin" ? "Welcome back" : "Create your account"}</CardTitle>
