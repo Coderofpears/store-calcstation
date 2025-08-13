@@ -46,7 +46,6 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["download_type"]
           mime_type: string | null
-          storage_path: string | null
         }
         Insert: {
           created_at?: string
@@ -58,7 +57,6 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["download_type"]
           mime_type?: string | null
-          storage_path?: string | null
         }
         Update: {
           created_at?: string
@@ -70,7 +68,6 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["download_type"]
           mime_type?: string | null
-          storage_path?: string | null
         }
         Relationships: []
       }
@@ -137,30 +134,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      purchases: {
-        Row: {
-          created_at: string
-          edition: string | null
-          game_slug: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          edition?: string | null
-          game_slug: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          edition?: string | null
-          game_slug?: string
-          id?: string
-          user_id?: string
         }
         Relationships: []
       }
