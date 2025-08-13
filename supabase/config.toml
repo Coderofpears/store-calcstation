@@ -1,1 +1,4 @@
 project_id = "gyorpfibmjromzopnmkc"
+
+[functions.issue-download]
+verify_jwt = true
