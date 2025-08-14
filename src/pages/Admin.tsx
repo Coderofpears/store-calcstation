@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import { defaultGames, type Game } from "@/data/games";
 import {
@@ -18,6 +21,20 @@ import {
 import { fileToDataUrl } from "@/utils/base64";
 import { supabase } from "@/integrations/supabase/client";
 
+interface GameVersion {
+  id: string;
+  name: string;
+  devices: DeviceDownload[];
+}
+
+interface DeviceDownload {
+  id: string;
+  device: string;
+  fileName: string;
+  fileExtension: string;
+  fileData: string;
+}
+
 const Admin = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [ann, setAnn] = useState<Announcement[]>([]);
@@ -27,28 +44,152 @@ const Admin = () => {
     setAnn(loadAnnouncements());
   }, []);
 
+  // Game form state
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState<string>("");
   const [tags, setTags] = useState<string>("");
+  const [description, setDescription] = useState("");
+  const [gameImages, setGameImages] = useState<string[]>([]);
+  const [versions, setVersions] = useState<GameVersion[]>([]);
 
-  const addGame = () => {
-    if (!title || !price) return;
-    const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const newGame: Game = {
-      id,
-      title,
-      cover: defaultGames[0].cover,
-      price: parseFloat(price),
-      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-      description: `New listing: ${title}.`,
-      editions: [{ id: "standard", name: "Standard", price: parseFloat(price), includesBase: true }],
-      dlcs: [],
+  const addGameImage = async (file: File) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setGameImages(prev => [...prev, dataUrl]);
+      toast.success("Image added");
+    } catch (error) {
+      toast.error("Failed to add image");
+    }
+  };
+
+  const removeGameImage = (index: number) => {
+    setGameImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addVersion = () => {
+    const newVersion: GameVersion = {
+      id: `version-${Date.now()}`,
+      name: `Version ${versions.length + 1}`,
+      devices: []
     };
-    const next = [newGame, ...games];
-    setGames(next);
-    saveGames(next);
-    setTitle(""); setPrice(""); setTags("");
-    toast.success("Game added");
+    setVersions(prev => [...prev, newVersion]);
+  };
+
+  const removeVersion = (versionId: string) => {
+    setVersions(prev => prev.filter(v => v.id !== versionId));
+  };
+
+  const updateVersionName = (versionId: string, name: string) => {
+    setVersions(prev => prev.map(v => v.id === versionId ? { ...v, name } : v));
+  };
+
+  const addDeviceToVersion = (versionId: string, device: string) => {
+    const newDevice: DeviceDownload = {
+      id: `device-${Date.now()}`,
+      device,
+      fileName: "",
+      fileExtension: "",
+      fileData: ""
+    };
+    setVersions(prev => prev.map(v => 
+      v.id === versionId ? { ...v, devices: [...v.devices, newDevice] } : v
+    ));
+  };
+
+  const removeDeviceFromVersion = (versionId: string, deviceId: string) => {
+    setVersions(prev => prev.map(v => 
+      v.id === versionId ? { ...v, devices: v.devices.filter(d => d.id !== deviceId) } : v
+    ));
+  };
+
+  const updateDeviceFile = async (versionId: string, deviceId: string, file: File, fileName: string, extension: string) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setVersions(prev => prev.map(v => 
+        v.id === versionId ? {
+          ...v,
+          devices: v.devices.map(d => 
+            d.id === deviceId ? { ...d, fileName, fileExtension: extension, fileData: dataUrl } : d
+          )
+        } : v
+      ));
+      toast.success("File uploaded");
+    } catch (error) {
+      toast.error("Failed to upload file");
+    }
+  };
+
+  const addGame = async () => {
+    if (!title || !price || !description) return;
+    
+    try {
+      const gameSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      
+      // Save to Supabase games table
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
+      
+      if (user) {
+        const { error: gameError } = await supabase.from("games").insert({
+          slug: gameSlug,
+          title,
+          description,
+          price: parseFloat(price),
+          tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+          cover_base64: gameImages[0] || null,
+          created_by: user.id
+        });
+
+        if (gameError) throw gameError;
+
+        // Save downloads for each version and device
+        for (const version of versions) {
+          for (const device of version.devices) {
+            if (device.fileData && device.fileName) {
+              await supabase.from("game_downloads").insert({
+                game_slug: gameSlug,
+                device: device.device,
+                kind: "full",
+                file_name: `${device.fileName}.${device.fileExtension}`,
+                mime_type: "application/octet-stream",
+                data_base64: device.fileData,
+                created_by: user.id
+              });
+            }
+          }
+        }
+      }
+
+      // Also save locally
+      const newGame: Game = {
+        id: gameSlug,
+        title,
+        cover: gameImages[0] || defaultGames[0].cover,
+        price: parseFloat(price),
+        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        description,
+        editions: [{ id: "standard", name: "Standard", price: parseFloat(price), includesBase: true }],
+        dlcs: [],
+        screenshots: gameImages.slice(1)
+      };
+      
+      const next = [newGame, ...games];
+      setGames(next);
+      saveGames(next);
+      
+      // Reset form
+      setTitle(""); 
+      setPrice(""); 
+      setTags(""); 
+      setDescription("");
+      setGameImages([]);
+      setVersions([]);
+      
+      toast.success("Game added successfully");
+    } catch (error) {
+      console.error("Error adding game:", error);
+      toast.error("Failed to add game");
+    }
   };
 
   const deleteGame = (id: string) => {
@@ -100,27 +241,12 @@ const Admin = () => {
     }
   };
 
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiResult, setAiResult] = useState("");
-  const generateAI = async () => {
-    // Mocked generator for now
-    setAiResult("Generating...");
-    await new Promise((r) => setTimeout(r, 600));
-    const tags = aiPrompt
-      .split(/\s+/)
-      .filter((w) => w.length > 4)
-      .slice(0, 5)
-      .map((w) => w.replace(/[^a-z]/gi, "").toLowerCase());
-    setAiResult(
-      `Engage in ${aiPrompt || "your new game"}. Features responsive controls, stylish visuals, and replayable challenges. Suggested tags: ${tags.join(", ")}`
-    );
-  };
 
   return (
     <>
       <Helmet>
         <title>Admin Portal | Neon Game Store</title>
-        <meta name="description" content="Manage games, DLCs, announcements and generate AI descriptions." />
+        <meta name="description" content="Manage games, DLCs, and announcements with advanced upload capabilities." />
         <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : '/'} />
       </Helmet>
 
@@ -132,7 +258,6 @@ const Admin = () => {
             <TabsTrigger value="games">Games</TabsTrigger>
             <TabsTrigger value="dlc">DLC</TabsTrigger>
             <TabsTrigger value="ann">Announcements</TabsTrigger>
-            <TabsTrigger value="ai">AI Description</TabsTrigger>
           </TabsList>
 
           <TabsContent value="games" className="mt-6">
@@ -140,21 +265,184 @@ const Admin = () => {
               <CardHeader>
                 <CardTitle>Add Game</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <CardContent className="grid gap-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="price">Price (USD)</Label>
+                    <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+                  </div>
                 </div>
+                
                 <div>
-                  <Label htmlFor="price">Price (USD)</Label>
-                  <Input id="price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea 
+                    id="description" 
+                    value={description} 
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="min-h-[100px]"
+                  />
                 </div>
-                <div className="md:col-span-3">
+                
+                <div>
                   <Label htmlFor="tags">Tags (comma separated)</Label>
                   <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} />
                 </div>
-                <div className="md:col-span-3">
-                  <Button variant="hero" onClick={addGame}>Add Game</Button>
+
+                {/* Images Section */}
+                <div>
+                  <Label>Game Images</Label>
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) addGameImage(file);
+                      }}
+                      className="mb-4"
+                    />
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {gameImages.map((image, index) => (
+                        <div key={index} className="relative">
+                          <img src={image} alt={`Game image ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => removeGameImage(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Game Versions Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <Label>Game Versions</Label>
+                    <Button onClick={addVersion} variant="outline">Add Version</Button>
+                  </div>
+                  
+                  {versions.map((version) => (
+                    <Card key={version.id} className="mb-4">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-4">
+                          <Input
+                            value={version.name}
+                            onChange={(e) => updateVersionName(version.id, e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeVersion(version.id)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex gap-2 mb-4">
+                          <Select onValueChange={(device) => addDeviceToVersion(version.id, device)}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Add device" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Windows">Windows</SelectItem>
+                              <SelectItem value="macOS">macOS</SelectItem>
+                              <SelectItem value="Linux">Linux</SelectItem>
+                              <SelectItem value="Android">Android</SelectItem>
+                              <SelectItem value="iOS">iOS</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          {version.devices.map((device) => (
+                            <div key={device.id} className="border rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="font-medium">{device.device}</h4>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeDeviceFromVersion(version.id, device.id)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid gap-4 md:grid-cols-3">
+                                <Input
+                                  placeholder="File name"
+                                  value={device.fileName}
+                                  onChange={(e) => {
+                                    const fileName = e.target.value;
+                                    setVersions(prev => prev.map(v => 
+                                      v.id === version.id ? {
+                                        ...v,
+                                        devices: v.devices.map(d => 
+                                          d.id === device.id ? { ...d, fileName } : d
+                                        )
+                                      } : v
+                                    ));
+                                  }}
+                                />
+                                <Input
+                                  placeholder="Extension (exe, dmg, etc.)"
+                                  value={device.fileExtension}
+                                  onChange={(e) => {
+                                    const extension = e.target.value;
+                                    setVersions(prev => prev.map(v => 
+                                      v.id === version.id ? {
+                                        ...v,
+                                        devices: v.devices.map(d => 
+                                          d.id === device.id ? { ...d, fileExtension: extension } : d
+                                        )
+                                      } : v
+                                    ));
+                                  }}
+                                />
+                                <input
+                                  type="file"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file && device.fileName && device.fileExtension) {
+                                      updateDeviceFile(version.id, device.id, file, device.fileName, device.fileExtension);
+                                    }
+                                  }}
+                                  className="text-sm"
+                                />
+                              </div>
+                              
+                              {device.fileData && (
+                                <div className="mt-2 text-sm text-green-600">
+                                  ✓ File uploaded: {device.fileName}.{device.fileExtension}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div>
+                  <Button 
+                    variant="hero" 
+                    onClick={addGame}
+                    disabled={!title || !price || !description}
+                    className="w-full"
+                  >
+                    Add Game
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -234,26 +522,6 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Game Description</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div>
-                  <Label htmlFor="aiprompt">Brief</Label>
-                  <Input id="aiprompt" placeholder="e.g., cyberpunk racer with drifting mechanics" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
-                </div>
-                <div className="flex gap-3">
-                  <Button variant="hero" onClick={generateAI}>Generate</Button>
-                  <Button variant="secondary" onClick={() => { setAiPrompt(""); setAiResult(""); }}>Clear</Button>
-                </div>
-                {aiResult && (
-                  <div className="rounded-md border p-4 text-sm text-muted-foreground whitespace-pre-wrap">{aiResult}</div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </main>
     </>
