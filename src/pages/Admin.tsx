@@ -350,18 +350,33 @@ const Admin = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="flex gap-2 mb-4">
-                          <Select onValueChange={(device) => addDeviceToVersion(version.id, device)}>
-                            <SelectTrigger className="w-48">
-                              <SelectValue placeholder="Add device" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Windows">Windows</SelectItem>
-                              <SelectItem value="macOS">macOS</SelectItem>
-                              <SelectItem value="Linux">Linux</SelectItem>
-                              <SelectItem value="Android">Android</SelectItem>
-                              <SelectItem value="iOS">iOS</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            placeholder="Enter device name (e.g., Windows, macOS, Linux)"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const device = e.currentTarget.value.trim();
+                                if (device) {
+                                  addDeviceToVersion(version.id, device);
+                                  e.currentTarget.value = '';
+                                }
+                              }
+                            }}
+                            className="flex-1"
+                          />
+                          <Button
+                            onClick={() => {
+                              const input = document.querySelector(`input[placeholder*="Enter device name"]`) as HTMLInputElement;
+                              const device = input?.value.trim();
+                              if (device) {
+                                addDeviceToVersion(version.id, device);
+                                input.value = '';
+                              }
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Add Device
+                          </Button>
                         </div>
                         
                         <div className="space-y-4">

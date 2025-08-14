@@ -2,13 +2,30 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { Game } from "@/data/games";
+import { addToCart } from "@/data/cart";
 
 interface Props {
   game: Game;
 }
 
 const GameCard = ({ game }: Props) => {
+  const handleAddToCart = () => {
+    const success = addToCart({
+      gameId: game.id,
+      title: game.title,
+      price: game.price,
+      cover: game.cover
+    });
+    
+    if (success) {
+      toast.success("Added to cart!");
+    } else {
+      toast.error("Already in cart");
+    }
+  };
+
   return (
     <Card className="overflow-hidden border-border/50 bg-card/80 hover:bg-card transition-colors shadow-glow">
       <Link to={`/game/${game.id}`} aria-label={`View ${game.title}`}>
@@ -28,9 +45,14 @@ const GameCard = ({ game }: Props) => {
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">From ${game.price.toFixed(2)}</span>
-          <Button asChild variant="glow" size="sm">
-            <Link to={`/game/${game.id}`}>View</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleAddToCart} variant="secondary" size="sm">
+              Add to Cart
+            </Button>
+            <Button asChild variant="glow" size="sm">
+              <Link to={`/game/${game.id}`}>View</Link>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

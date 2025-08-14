@@ -66,9 +66,6 @@ const Index = () => {
                   Log out
                 </Button>
               )}
-              <Button asChild variant="hero" size="sm">
-                <Link to="/admin">Admin Portal</Link>
-              </Button>
             </div>
           </div>
         </div>
