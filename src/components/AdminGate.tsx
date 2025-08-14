@@ -25,14 +25,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (!visible) {
-    return (
-      <main className="container py-24 text-center">
-        <p className="text-sm text-muted-foreground">
-          Admin center is hidden. Open DevTools and run:
-          <code className="mx-1 rounded bg-muted px-1.5 py-0.5">showadmin()</code>
-        </p>
-      </main>
-    );
+    return null;
   }
 
   return <>{children}</>;
