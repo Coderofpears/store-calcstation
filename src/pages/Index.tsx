@@ -58,6 +58,11 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <Link to="/" className="story-link text-xl font-display">Neon Game Store</Link>
             <div className="flex items-center gap-2">
+              {loggedIn && (
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/purchases">My Purchases</Link>
+                </Button>
+              )}
               <Button asChild variant="secondary" size="sm">
                 <Link to="/auth">{loggedIn ? "Account" : "Sign In"}</Link>
               </Button>

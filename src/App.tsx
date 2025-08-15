@@ -10,6 +10,7 @@ import GameDetail from "./pages/GameDetail";
 import Admin from "./pages/Admin";
 import ThankYou from "./pages/ThankYou";
 import Auth from "./pages/Auth";
+import PurchaseHistory from "./pages/PurchaseHistory";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminGate from "@/components/AdminGate";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminGate><Admin /></AdminGate></ProtectedRoute>} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/purchases" element={<ProtectedRoute><PurchaseHistory /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -138,6 +138,14 @@ const GameDetail = () => {
               <Button variant="hero" onClick={() => (isFree ? handlePurchase() : setOpen(true))}>
                 {isFree ? "Get Free" : `Buy Now — $${price.toFixed(2)}`}
               </Button>
+              <Button variant="secondary" onClick={() => {
+                const now = new Date();
+                const releaseDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+                toast.success("Preorder placed! Game will be available on release.");
+                navigate(`/thank-you?game=${game.id}&preorder=true`);
+              }}>
+                Preorder
+              </Button>
               <Button variant="secondary" onClick={handleGetDemo}>Get Demo</Button>
               {!isFree && (
                 <span className="text-sm text-muted-foreground">Secure checkout (simulated)</span>

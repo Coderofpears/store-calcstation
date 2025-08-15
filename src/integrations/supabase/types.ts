@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -46,6 +46,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["download_type"]
           mime_type: string | null
+          storage_path: string | null
         }
         Insert: {
           created_at?: string
@@ -57,6 +58,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["download_type"]
           mime_type?: string | null
+          storage_path?: string | null
         }
         Update: {
           created_at?: string
@@ -68,6 +70,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["download_type"]
           mime_type?: string | null
+          storage_path?: string | null
         }
         Relationships: []
       }
@@ -78,7 +81,9 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_preorder_available: boolean | null
           price: number
+          release_date: string | null
           slug: string
           status: Database["public"]["Enums"]["game_status"]
           tags: string[] | null
@@ -91,7 +96,9 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_preorder_available?: boolean | null
           price?: number
+          release_date?: string | null
           slug: string
           status?: Database["public"]["Enums"]["game_status"]
           tags?: string[] | null
@@ -104,7 +111,9 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_preorder_available?: boolean | null
           price?: number
+          release_date?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["game_status"]
           tags?: string[] | null
@@ -134,6 +143,39 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          edition: string | null
+          game_slug: string
+          id: string
+          is_preorder: boolean | null
+          order_status: string | null
+          preorder_release_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          edition?: string | null
+          game_slug: string
+          id?: string
+          is_preorder?: boolean | null
+          order_status?: string | null
+          preorder_release_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          edition?: string | null
+          game_slug?: string
+          id?: string
+          is_preorder?: boolean | null
+          order_status?: string | null
+          preorder_release_date?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -192,8 +234,8 @@ export type Database = {
     Functions: {
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
