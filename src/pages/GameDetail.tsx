@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { loadGames, addOwned, loadOwned } from "@/data/store";
+import { supabase } from "@/integrations/supabase/client";
 
 const GameDetail = () => {
   const { id } = useParams();
@@ -18,7 +19,31 @@ const GameDetail = () => {
   const owned = new Set(loadOwned());
   const [open, setOpen] = useState(false);
   const [edition, setEdition] = useState(game?.editions?.[0]?.id || "standard");
+  const [userPurchases, setUserPurchases] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  // Check user's purchases to restrict DLC access
+  useEffect(() => {
+    const checkPurchases = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (user) {
+          const { data: purchases } = await supabase
+            .from("purchases")
+            .select("game_slug")
+            .eq("user_id", user.id);
+          
+          if (purchases) {
+            setUserPurchases(purchases.map(p => p.game_slug));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching purchases:", error);
+      }
+    };
+    checkPurchases();
+  }, []);
 
   if (!game) {
     return (
@@ -31,6 +56,7 @@ const GameDetail = () => {
   }
 
   const alreadyOwned = owned.has(game.id);
+  const hasBaseGame = userPurchases.includes(game.id) || alreadyOwned;
 
   const selectedEdition = game.editions.find((e) => e.id === edition) || game.editions[0];
 
@@ -167,11 +193,16 @@ const GameDetail = () => {
                       <Button
                         variant="glow"
                         size="sm"
+                        disabled={!hasBaseGame}
                         onClick={() => {
+                          if (!hasBaseGame) {
+                            toast.error("You must own the base game to purchase DLC");
+                            return;
+                          }
                           toast.success(`Added ${d.name} (simulated)`);
                         }}
                       >
-                        Buy DLC
+                        {hasBaseGame ? "Buy DLC" : "Requires Base Game"}
                       </Button>
                     </div>
                   </div>

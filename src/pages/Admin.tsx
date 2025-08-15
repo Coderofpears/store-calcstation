@@ -51,6 +51,8 @@ const Admin = () => {
   const [description, setDescription] = useState("");
   const [gameImages, setGameImages] = useState<string[]>([]);
   const [versions, setVersions] = useState<GameVersion[]>([]);
+  const [releaseDate, setReleaseDate] = useState<string>("");
+  const [isPreorder, setIsPreorder] = useState(false);
 
   const addGameImage = async (file: File) => {
     try {
@@ -137,6 +139,8 @@ const Admin = () => {
           price: parseFloat(price),
           tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
           cover_base64: gameImages[0] || null,
+          release_date: releaseDate ? new Date(releaseDate).toISOString() : null,
+          is_preorder_available: isPreorder,
           created_by: user.id
         });
 
@@ -184,6 +188,8 @@ const Admin = () => {
       setDescription("");
       setGameImages([]);
       setVersions([]);
+      setReleaseDate("");
+      setIsPreorder(false);
       
       toast.success("Game added successfully");
     } catch (error) {
@@ -290,6 +296,28 @@ const Admin = () => {
                 <div>
                   <Label htmlFor="tags">Tags (comma separated)</Label>
                   <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor="releaseDate">Release Date (optional)</Label>
+                    <Input 
+                      id="releaseDate" 
+                      type="date" 
+                      value={releaseDate} 
+                      onChange={(e) => setReleaseDate(e.target.value)} 
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 mt-6">
+                    <input
+                      type="checkbox"
+                      id="isPreorder"
+                      checked={isPreorder}
+                      onChange={(e) => setIsPreorder(e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="isPreorder">Available for preorder</Label>
+                  </div>
                 </div>
 
                 {/* Images Section */}
